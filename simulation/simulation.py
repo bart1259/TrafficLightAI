@@ -526,12 +526,14 @@ def lerp(a: float, b: float, t: float) -> float:
     return (1 - t) * a + t * b
 
 class Grid:
-    def __init__(self, ai_function, x_grid, y_grid, length, max_speed, in_rate, initial_density):
+    def __init__(self, ai_function, x_grid, y_grid, length, max_speed, in_rate, initial_density, seed=42):
         self.x_grid = x_grid
         self.y_grid = y_grid
         self.max_speed = max_speed
         self.grid = np.zeros(shape=(x_grid, y_grid), dtype=object)
         self.lanes = []
+        np.random.seed(seed)
+        random.seed(seed)
         
         for x in range(x_grid):
             for y in range(y_grid):
@@ -659,8 +661,8 @@ class Grid:
 ############### SIMULATION ################
 
 class TrafficSimulation:
-    def __init__(self, ai_function, grid_size=21, lane_length=10, max_speed=5, in_rate=0.2, initial_density=0.05):
-        self.grid = Grid(ai_function, grid_size, grid_size, lane_length, max_speed, in_rate, initial_density)
+    def __init__(self, ai_function, grid_size=21, lane_length=10, max_speed=5, in_rate=0.2, initial_density=0.05, seed=42):
+        self.grid = Grid(ai_function, grid_size, grid_size, lane_length, max_speed, in_rate, initial_density, seed=seed)
         
     def run_simulation(self, ticks):
         total_cars_stopped = 0
