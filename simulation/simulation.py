@@ -660,9 +660,16 @@ class Grid:
                     
 ############### SIMULATION ################
 
+# Units of the simulation
+# 1 Cell = 7m (22.4 ft)
+# 1 Tick = 1.565 s
+# 1 Speed Increment = 10mph
+
 class TrafficSimulation:
-    def __init__(self, ai_function, grid_size=21, lane_length=10, max_speed=5, in_rate=0.2, initial_density=0.05, seed=42):
-        self.grid = Grid(ai_function, grid_size, grid_size, lane_length, max_speed, in_rate, initial_density, seed=seed)
+    def __init__(self, ai_function, grid_size_x=21, grid_size_y=21, lane_length=14, max_speed=7, in_rate=0.2, initial_density=0.05, seed=42):
+        self.grid_size_x = grid_size_x
+        self.grid_size_y = grid_size_y
+        self.grid = Grid(ai_function, grid_size_x, grid_size_y, lane_length, max_speed, in_rate, initial_density, seed=seed)
         
     def run_simulation(self, ticks):
         total_cars_stopped = 0
@@ -673,7 +680,7 @@ class TrafficSimulation:
         return total_cars_stopped
     
     def render_frame(self, filename="./frames/frame.png"):
-        fig,ax = plt.subplots(1,1, figsize=(12, 12))
+        fig,ax = plt.subplots(1,1, figsize=(self.grid_size_x * 1.5, self.grid_size_y * 1.5))
         self.grid.draw(ax)
         plt.savefig(filename, pad_inches=0)
         
