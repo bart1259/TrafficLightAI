@@ -16,6 +16,17 @@ warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
 warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 warnings.simplefilter('ignore', category=NumbaWarning)
 
+SimulationContext_spec = [
+    ('carbon_emissions', int32),
+    ('cars_stopped', int32)
+]
+
+@jitclass(SimulationContext_spec)
+class SimulationContext:
+    def __init__(self):
+        self.cars_stopped = 0
+        self.carbon_emissions = 0
+
 def print_lane(lane):
     textual_representation = ""
     for i in range(len(lane)):
@@ -90,7 +101,7 @@ def get_next_car(street, index):
     return distance_to_next_car, speed_of_next_car
 
 @jit(nogil=True)
-def update_lane(input_segment, lane, output_segment, max_speed=MAX_SPEED):
+def update_lane(input_segment, lane, output_segment, simulation_context, max_speed=MAX_SPEED):
     input_len = 0
     output_len = 0
     if input_segment is not None:
@@ -115,6 +126,7 @@ def update_lane(input_segment, lane, output_segment, max_speed=MAX_SPEED):
         
     # Keep track of what cars leave off the end
     leaving_cars = [] # [(speed, distance)]
+    carbon_emitted = 0
     
     new_street = -np.ones(total_length, dtype=np.byte)
     for i in range(total_length):
@@ -141,11 +153,17 @@ def update_lane(input_segment, lane, output_segment, max_speed=MAX_SPEED):
                 new_speed = 0
 
             new_speed = max(0, min(new_speed, max_speed))
+            
+            acceleration = new_speed - speed
+            carbon_emitted = (acceleration * 2) + new_speed + 2
+            
             if (i + max_forward) < total_length:
                 new_street[int(i + max_forward)] = np.int8(new_speed)
             else:
                 leaving_cars.append((new_speed, i + max_forward - total_length))
 
+    simulation_context.carbon_emissions += carbon_emitted
+                
     if input_len != 0 and output_len != 0:
         return (new_street[:input_len], new_street[input_len:-output_len], new_street[-output_len:], leaving_cars)
     elif output_len != 0:
@@ -156,11 +174,12 @@ def update_lane(input_segment, lane, output_segment, max_speed=MAX_SPEED):
         return (None, new_street, None, leaving_cars)
 
 class Lane:
-    def __init__(self, cell_count, max_speed, start_x=0, start_y=0, end_x=0, end_y=0):
+    def __init__(self, cell_count, max_speed, simulation_context, start_x=0, start_y=0, end_x=0, end_y=0):
         self.cell_count = cell_count
         self.max_speed = max_speed
         self.array = -np.ones(cell_count, dtype=np.byte)
         
+        self.simulation_context = simulation_context
         self.start_x = start_x
         self.start_y = start_y
         self.end_x = end_x
@@ -209,7 +228,7 @@ class Lane:
           
     @jit()
     def tick(self, input_segment=np.array([]), output_segment=np.array([])):
-        new_input, self.array, new_output, leaving_cars = update_lane(input_segment, self.array, output_segment, max_speed=self.max_speed)
+        new_input, self.array, new_output, leaving_cars = update_lane(input_segment, self.array, output_segment, self.simulation_context, max_speed=self.max_speed)
         return new_input, new_output, leaving_cars
 
     def get_string(self):
@@ -377,7 +396,7 @@ def dummy_ai(inputs):
         return NORTH_SOUTH_GREEN, 30
     
 class Intersection():
-    def __init__(self, ai_function=dummy_ai):
+    def __init__(self, simulation_context, ai_function=dummy_ai):
         self.inlets = [NoInlet(), NoInlet(), NoInlet(), NoInlet()]
         self.outlets = [AllOutlet(), AllOutlet(), AllOutlet(), AllOutlet()]
         self.outlet_weights = [1,1,1,1]
@@ -557,6 +576,7 @@ class Grid:
         self.max_speed = max_speed
         self.grid = np.zeros(shape=(x_grid, y_grid), dtype=object)
         self.lanes = []
+        self.simulation_context = SimulationContext()
         np.random.seed(seed)
         random.seed(seed)
         
@@ -576,13 +596,13 @@ class Grid:
                     if x % 5 == 2:
                         lane_speed += 1
                     
-                    lane = Lane(length, lane_speed, start_x=x-ST_WIDTH, start_y=y+ST_WIDTH, end_x=x-1+ST_WIDTH, end_y=y+ST_WIDTH)
+                    lane = Lane(length, lane_speed, self.simulation_context, start_x=x-ST_WIDTH, start_y=y+ST_WIDTH, end_x=x-1+ST_WIDTH, end_y=y+ST_WIDTH)
                     lane.set_density(initial_density)
                     
                     self.grid[x-1,y].set_inlet(WEST_INDEX, LaneInlet(lane))
                     self.grid[x,y].set_outlet(EAST_INDEX, LaneOutlet(lane)) # Right
                 
-                    lane2 = Lane(length, lane_speed, start_x=x-1+ST_WIDTH, start_y=y-ST_WIDTH, end_x=x-ST_WIDTH, end_y=y-ST_WIDTH)
+                    lane2 = Lane(length, lane_speed, self.simulation_context, start_x=x-1+ST_WIDTH, start_y=y-ST_WIDTH, end_x=x-ST_WIDTH, end_y=y-ST_WIDTH)
                     lane2.set_density(initial_density)
                     self.grid[x,y].set_inlet(EAST_INDEX, LaneInlet(lane2))
                     self.grid[x-1,y].set_outlet(WEST_INDEX, LaneOutlet(lane2)) # Left
@@ -595,13 +615,13 @@ class Grid:
                     if y % 5 == 2:
                         lane_speed += 2
                     
-                    lane = Lane(length, lane_speed, start_x=x-ST_WIDTH, start_y=y-ST_WIDTH, end_x=x-ST_WIDTH, end_y=y-1+ST_WIDTH)
+                    lane = Lane(length, lane_speed, self.simulation_context, start_x=x-ST_WIDTH, start_y=y-ST_WIDTH, end_x=x-ST_WIDTH, end_y=y-1+ST_WIDTH)
                     lane.set_density(initial_density)
                     
                     self.grid[x,y-1].set_inlet(NORTH_INDEX, LaneInlet(lane))
                     self.grid[x,y].set_outlet(SOUTH_INDEX, LaneOutlet(lane)) # Down
                     
-                    lane2 = Lane(length, lane_speed, start_x=x+ST_WIDTH, start_y=y-1+ST_WIDTH, end_x=x+ST_WIDTH, end_y=y-ST_WIDTH)
+                    lane2 = Lane(length, lane_speed, self.simulation_context, start_x=x+ST_WIDTH, start_y=y-1+ST_WIDTH, end_x=x+ST_WIDTH, end_y=y-ST_WIDTH)
                     lane2.set_density(initial_density)
                     self.grid[x,y].set_inlet(SOUTH_INDEX, LaneInlet(lane2))
                     self.grid[x,y-1].set_outlet(NORTH_INDEX, LaneOutlet(lane2)) # Up
@@ -641,7 +661,7 @@ class Grid:
             for y in range(self.y_grid):
                 self.grid[x,y].tick_out()
                 
-        self.get_current_cars_stopped()
+        self.simulation_context.cars_stopped += self.get_current_cars_stopped()
                 
     def draw(self, ax):
         blacks_x = []
@@ -697,12 +717,13 @@ class TrafficSimulation:
         self.grid = Grid(ai_function, grid_size_x, grid_size_y, lane_length, max_speed, in_rate, initial_density, seed=seed)
         
     def run_simulation(self, ticks):
-        total_cars_stopped = 0
         for i in range(ticks):
             self.grid.tick()
-            total_cars_stopped += self.grid.get_current_cars_stopped()
             
-        return total_cars_stopped
+        return {
+            "cars_stopped": self.grid.simulation_context.cars_stopped,
+            "carbon_emissions": self.grid.simulation_context.carbon_emissions
+        }
     
     def render_frame(self, filename="./frames/frame.png"):
         fig,ax = plt.subplots(1,1, figsize=(self.grid_size_x * 1.5, self.grid_size_y * 1.5))

@@ -4,6 +4,8 @@ import numpy as np
 import random
 import numpy.random as np_random
 import math
+import warnings
+warnings.warn('Newer version of simulation, simulation_numba is available')
 
 def print_lane(lane):
     textual_representation = ""
