@@ -1,0 +1,31 @@
+# pyproject.toml
+
+[build-system]
+requires      = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-traffic-light-simulator"
+version = "1.0.0"
+description = "Traffic simulation for traffic light A.I. training"
+readme = "README.md"
+authors = []
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+keywords = ["artifical intelligence", "traffic", "traffic simulator", "simulation", "cellular automata"]
+dependencies = [
+    "matplotlib>=3.4.0",
+    "numpy>=1.20.0",
+    "numba>=0.50.0",
+]
+requires-python = ">=3.8"
+
+[project.optional-dependencies]
+dev = []
+
+[project.urls]
+Homepage = "https://github.com/bart1259/TrafficLightAI"

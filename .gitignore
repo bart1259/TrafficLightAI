@@ -2,3 +2,6 @@
 */__pycache__
 frames
 .nogil-python
+.iso
+dist
+*.egg-info

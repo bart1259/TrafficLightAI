@@ -1,27 +1,46 @@
 # TrafficLightAI
-An A.I. to determine ideal timings of traffic lights.
+A python traffic simulation serving as a playground to create traffic light A.I. systems. The traffic simulation uses a cellular automata approach to simulate large traffic grids. The simulation is optimized with Numba.
 
-## Running the Backend Server
-For ease of modifiability and debugability, the backend server is run from a Jupyter notebook.
+## Installation
 
-## Installing no GIL Python
-
-To install python without the global interpeter lock simply run
-
-```bash
-sh install-python-no-gil.sh
-```
-To run a script using this new version of python run
-```bash
-# Sets proper enviornment variables
-source ~/.bashrc
-
-# Now run 
-nogil-python script.py
-
-# Pip install using
-nogil-python -m pip install numpy
+```sh
+pip install ai-traffic-light-simulator
 ```
 
-## SSH Tunnel Setup for Remote Server
-If the backend server is run on a machine other than your local computer (e.g. ROSIE) an SSH tunnel must be created for the requests to reach the remote session. To do this, run the `tunnel.sh` script on your LOCAL machine IN BASH. You will be prompted for the node the backend server is running on (this can be found by looking at the URL of your Jupyter notebook) and your username. If SSH keys have been exchanged, you will not need to provide a password. From here an SSH tunnel we be created. To verify this, with the server running, go to [localhost:3000](http://localhost:3000) and see if you can get a response from the server.
+## Example
+
+```python
+from traffic_simulation_numba import TrafficSimulation
+# OR from traffic_simulation import TrafficSimulation
+import random
+
+NORTH_SOUTH_GREEN = 0
+EAST_WEST_GREEN = 1
+
+# A basic A.I. which randomly determines light timings
+# Inputs: [North waiting, East waiting, South waiting, West Waiting, Previous Light Direction]
+def my_ai(inputs):
+    if inputs[-1] == NORTH_SOUTH_GREEN:
+        return EAST_WEST_GREEN, random.randint(1,30)
+    if inputs[-1] == EAST_WEST_GREEN:
+        return NORTH_SOUTH_GREEN, random.randint(1,30)
+
+# Make traffic simulation object with our naive A.I.
+sim = TrafficSimulation(
+    my_ai, 
+    grid_size_x=8,
+    grid_size_y=8, 
+    lane_length=10,
+    max_speed=5, 
+    in_rate=0.2, 
+    initial_density=0.1, 
+    seed=42
+)
+
+results = sim.run_simulation(1000) # Runs the simulation for 1000 ticks
+print(results)
+# Returns { 'cars_stopped': 131680, 'carbon_emissions': 672824 }
+
+# Render a frame of the simulation after 1000 ticks
+sim.render_frame("Small.png")
+```
