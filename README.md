@@ -1,6 +1,9 @@
 # TrafficLightAI
 A python traffic simulation serving as a playground to create traffic light A.I. systems. The traffic simulation uses a cellular automata approach to simulate large traffic grids. The simulation is optimized with Numba.
 
+![image](https://user-images.githubusercontent.com/21147581/231293375-88a54f54-2462-4189-8153-8945c1621249.png)
+
+
 ## Installation
 
 ```sh
@@ -9,7 +12,7 @@ pip install ai-traffic-light-simulator
 
 ## Example
 
-```python
+```py
 from traffic_simulation_numba import TrafficSimulation
 # OR from traffic_simulation import TrafficSimulation
 import random
