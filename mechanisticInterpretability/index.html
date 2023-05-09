@@ -1,0 +1,39 @@
+<html>
+    <head>
+        <title>
+            Mechanistic Interpretability
+        </title>
+        <script src="script.js" defer></script>
+    </head>
+    <body>
+        <div style="display:flex ; flex-direction: row;">
+            <div id="inputs" style="display:flex ; flex-direction:column ; justify-content: space-evenly;">
+                <span>
+                    <p>North Car Count</p>
+                    <input type="range" min="0" max="10" value="3" class="slider" id="input0">
+                </span>
+                <span>
+                    <p>East Car Count</p>
+                    <input type="range" min="0" max="10" value="3" class="slider" id="input1">
+                </span>
+                <span>
+                    <p>South Car Count</p>
+                    <input type="range" min="0" max="10" value="3" class="slider" id="input2">
+                </span>
+                <span>
+                    <p>West Car Count</p>
+                    <input type="range" min="0" max="10" value="3" class="slider" id="input3">
+                </span>
+                <span>
+                    <p>NS / EW Direction</p>
+                    <input type="range" min="0" max="1" value="0" class="slider" id="input4">
+                </span>
+            </div>
+            <div id="model" style="width: 900px; height: 600px">
+                <canvas id="canvas" width=900 height=600 style="width: 900px; height: 600px"></canvas>
+            </div>
+            
+        </div>
+        <p>Mechanistic Interpretability</p>
+    </body>
+</html>

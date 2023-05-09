@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-traffic-light-simulator"
-version = "1.0.0"
+version = "1.0.1"
 description = "Traffic simulation for traffic light A.I. training"
 readme = "README.md"
 authors = []

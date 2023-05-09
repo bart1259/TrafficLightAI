@@ -396,14 +396,14 @@ def dummy_ai(inputs):
         return NORTH_SOUTH_GREEN, 30
     
 class Intersection():
-    def __init__(self, simulation_context, ai_function=dummy_ai):
+    def __init__(self, ai_function=dummy_ai):
         self.inlets = [NoInlet(), NoInlet(), NoInlet(), NoInlet()]
         self.outlets = [AllOutlet(), AllOutlet(), AllOutlet(), AllOutlet()]
         self.outlet_weights = [1,1,1,1]
         self.waiting = [[], [], [], []]
         self.leaving = [[], [], [], []]
         self.light_state = EAST_WEST_GREEN
-        self.light_time_waiting = 30
+        self.light_time_waiting = np.random.randint(15,30)
         self.ai_function = ai_function
         
     def set_inlet(self, index, inlet):
@@ -427,7 +427,7 @@ class Intersection():
     def get_waiting_array(self, index, length=1):
         waiting_array = -np.ones(length, dtype=np.byte)
         cars_waiting = len(self.waiting[index])
-        if (self.light_state == EAST_WEST_GREEN and (index == NORTH_INDEX or index == SOUTH_INDEX)) or (self.light_state == NORTH_SOUTH_GREEN and (index == EAST_INDEX or index == WEST_INDEX)):
+        if self.light_time_waiting <= 3 or (self.light_state == EAST_WEST_GREEN and (index == NORTH_INDEX or index == SOUTH_INDEX)) or (self.light_state == NORTH_SOUTH_GREEN and (index == EAST_INDEX or index == WEST_INDEX)):
 #         for i in range(cars_waiting):
             waiting_array[0] = 0
     
@@ -473,7 +473,7 @@ class Intersection():
         for in_dir in range(4):
             # Are there any cars that are waiting and want to go straight
             if len(self.waiting[in_dir]) > 0:
-                if (self.light_state - in_dir) % 2 == 0: # Has green light
+                if self.light_time_waiting > 3 and ((self.light_state - in_dir) % 2 == 0): # Has green light
                     car_eligable = self.waiting[in_dir][0]
                     eligable_cars[in_dir].append(car_eligable)
                 # FIXME: Make eligable cars to turn right on red
@@ -696,11 +696,17 @@ class Grid:
                 if self.grid[x,y].light_state == NORTH_SOUTH_GREEN:
                     # Draw vertical line
                     plt.plot([x+0.05, x-0.05],[y, y], color="red", linewidth=2.5)
-                    plt.plot([x,x],[y-0.05,y+0.05], color="lime", linewidth=2.5)
+                    if self.grid[x,y].light_time_waiting <= 3:
+                        plt.plot([x,x],[y-0.05,y+0.05], color="yellow", linewidth=2.5)
+                    else:
+                        plt.plot([x,x],[y-0.05,y+0.05], color="lime", linewidth=2.5)
                 else:
                     # Draw horizontal line
                     plt.plot([x,x],[y-0.05,y+0.05], color="red", linewidth=2.5)
-                    plt.plot([x+0.05, x-0.05],[y, y], color="lime", linewidth=2.5)
+                    if self.grid[x,y].light_time_waiting <= 3:
+                        plt.plot([x+0.05, x-0.05],[y, y], color="yellow", linewidth=2.5)
+                    else:
+                        plt.plot([x+0.05, x-0.05],[y, y], color="lime", linewidth=2.5)
                     
                     
 ############### SIMULATION ################
